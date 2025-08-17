@@ -3,209 +3,244 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>图片浏览器</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            line-height: 1.6;
+    <title>图片列表展示器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind自定义颜色和字体 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        neutral: '#64748B',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
         }
-        h1 {
-            color: #333;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        a {
-            color: #0066cc;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        .preview-container {
-            margin-top: 30px;
-            text-align: center;
-        }
-        .preview-img {
-            max-width: 80%;
-            max-height: 500px;
-            border: 1px solid #ddd;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        .close-btn {
-            margin-top: 10px;
-            padding: 5px 15px;
-            background-color: #f44336;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .close-btn:hover {
-            background-color: #d32f2f;
-        }
-        .file-input-container {
-            margin: 20px 0;
-            padding: 15px;
-            border: 1px dashed #ccc;
-            background-color: #f9f9f9;
-        }
-        .note {
-            color: #666;
-            font-size: 0.9em;
-            margin-top: 10px;
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .table-shadow {
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+            .transition-custom {
+                transition: all 0.3s ease;
+            }
         }
     </style>
 </head>
-<body>
-    <h1>图片浏览器</h1>
-    
-    <div class="file-input-container">
-        <h3>选择图片文件</h3>
-        <input type="file" id="file-input" multiple accept="image/*">
-        <p class="note">注意：由于浏览器安全限制，无法直接访问本地文件系统。请通过此文件选择器添加图片。</p>
-    </div>
-    
-    <div id="image-table-container">
-        <table id="image-table">
-            <thead>
-                <tr>
-                    <th>序号</th>
-                    <th>文件名</th>
-                    <th>类型</th>
-                    <th>大小</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody id="image-table-body">
-                <tr><td colspan="5">请通过上方文件选择器添加图片</td></tr>
-            </tbody>
-        </table>
-    </div>
-    
-    <div class="preview-container" id="preview-container" style="display: none;">
-        <h2>图片预览</h2>
-        <img id="preview-img" class="preview-img" src="" alt="图片预览">
-        <p id="preview-filename"></p>
-        <button class="close-btn" id="close-preview">关闭预览</button>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- 页面标题 -->
+        <header class="mb-8 text-center">
+            <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-gray-800 mb-2">图片列表展示器</h1>
+            <p class="text-neutral text-lg">选择文件夹或图片文件，查看图片信息</p>
+        </header>
+        
+        <!-- 文件选择区域 -->
+        <div class="mb-8 bg-white rounded-lg p-6 shadow-md">
+            <label for="file-input" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-primary rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-custom">
+                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                    <i class="fa fa-cloud-upload text-4xl text-primary mb-3"></i>
+                    <p class="mb-2 text-sm text-primary"><span class="font-semibold">点击上传</span> 或拖放图片文件/文件夹</p>
+                    <p class="text-xs text-neutral">支持 JPG, PNG, GIF 等格式</p>
+                </div>
+                <input id="file-input" type="file" class="hidden" accept="image/*" multiple directory webkitdirectory />
+            </label>
+            <p id="selected-info" class="mt-4 text-sm text-neutral hidden"></p>
+        </div>
+        
+        <!-- 图片表格展示区域 -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-800">图片信息列表</h2>
+                <div id="stats" class="text-sm text-neutral">
+                    共 <span id="total-count" class="font-medium">0</span> 张图片
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 table-shadow">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">预览</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">文件名</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">大小</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">类型</th>
+                        </tr>
+                    </thead>
+                    <tbody id="image-table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- 表格内容将通过JavaScript动态生成 -->
+                        <tr>
+                            <td colspan="4" class="px-6 py-12 text-center text-neutral">
+                                <i class="fa fa-picture-o text-4xl mb-3 opacity-30"></i>
+                                <p>请选择图片文件或包含图片的文件夹</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 页脚 -->
+        <footer class="mt-12 text-center text-neutral text-sm">
+            <p>图片列表展示器 &copy; 2023</p>
+        </footer>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // 获取元素
-            const fileInput = document.getElementById('file-input');
-            const tableBody = document.getElementById('image-table-body');
-            const previewContainer = document.getElementById('preview-container');
-            const previewImg = document.getElementById('preview-img');
-            const previewFilename = document.getElementById('preview-filename');
-            const closePreviewBtn = document.getElementById('close-preview');
-            
-            // 关闭预览按钮事件
-            closePreviewBtn.addEventListener('click', function() {
-                previewContainer.style.display = 'none';
-            });
-            
-            // 文件选择变化事件
-            fileInput.addEventListener('change', function(e) {
-                const files = Array.from(e.target.files);
-                
-                // 清空表格
-                tableBody.innerHTML = '';
-                
-                // 如果没有选择文件
-                if (files.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="5">请选择图片文件</td></tr>';
-                    return;
-                }
-                
-                // 遍历图片文件并生成表格行
-                files.forEach((file, index) => {
-                    // 只处理图片文件
-                    if (!file.type.startsWith('image/')) return;
-                    
-                    const row = document.createElement('tr');
-                    
-                    // 序号
-                    const indexCell = document.createElement('td');
-                    indexCell.textContent = index + 1;
-                    
-                    // 文件名
-                    const nameCell = document.createElement('td');
-                    nameCell.textContent = file.name;
-                    
-                    // 文件类型
-                    const typeCell = document.createElement('td');
-                    typeCell.textContent = file.type.split('/')[1].toUpperCase();
-                    
-                    // 文件大小
-                    const sizeCell = document.createElement('td');
-                    sizeCell.textContent = formatFileSize(file.size);
-                    
-                    // 操作（查看链接）
-                    const actionCell = document.createElement('td');
-                    const viewLink = document.createElement('a');
-                    viewLink.href = '#';
-                    viewLink.textContent = '查看';
-                    viewLink.dataset.filename = file.name;
-                    viewLink.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        showPreview(file);
-                    });
-                    actionCell.appendChild(viewLink);
-                    
-                    // 将单元格添加到行
-                    row.appendChild(indexCell);
-                    row.appendChild(nameCell);
-                    row.appendChild(typeCell);
-                    row.appendChild(sizeCell);
-                    row.appendChild(actionCell);
-                    
-                    // 将行添加到表格
-                    tableBody.appendChild(row);
-                });
-            });
-            
-            // 显示预览
-            function showPreview(file) {
-                const objectURL = URL.createObjectURL(file);
-                previewImg.src = objectURL;
-                previewFilename.textContent = file.name;
-                previewContainer.style.display = 'block';
-                
-                // 图片加载完成后释放之前的对象URL
-                previewImg.onload = function() {
-                    URL.revokeObjectURL(objectURL);
-                };
-                
-                // 滚动到预览区域
-                previewContainer.scrollIntoView({ behavior: 'smooth' });
-            }
-            
-            // 格式化文件大小
-            function formatFileSize(bytes) {
-                if (bytes === 0) return '0 Bytes';
-                const k = 1024;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-            }
+        // 获取DOM元素
+        const fileInput = document.getElementById('file-input');
+        const imageTableBody = document.getElementById('image-table-body');
+        const selectedInfo = document.getElementById('selected-info');
+        const totalCount = document.getElementById('total-count');
+        
+        // 监听文件选择事件
+        fileInput.addEventListener('change', handleFiles);
+        
+        // 处理拖放事件
+        const dropArea = document.querySelector('label[for="file-input"]');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
         });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropArea.classList.add('border-secondary', 'bg-green-50');
+            dropArea.classList.remove('border-primary', 'bg-blue-50', 'hover:bg-blue-100');
+        }
+        
+        function unhighlight() {
+            dropArea.classList.remove('border-secondary', 'bg-green-50');
+            dropArea.classList.add('border-primary', 'bg-blue-50', 'hover:bg-blue-100');
+        }
+        
+        dropArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFileList(files);
+        }
+        
+        // 处理选择的文件
+        function handleFiles() {
+            handleFileList(this.files);
+        }
+        
+        // 处理文件列表
+        function handleFileList(files) {
+            // 过滤出图片文件
+            const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+            
+            // 更新选择信息
+            selectedInfo.textContent = `已选择 ${imageFiles.length} 张图片`;
+            selectedInfo.classList.remove('hidden');
+            
+            // 更新总数统计
+            totalCount.textContent = imageFiles.length;
+            
+            // 清空表格
+            imageTableBody.innerHTML = '';
+            
+            // 如果没有图片文件
+            if (imageFiles.length === 0) {
+                imageTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="px-6 py-12 text-center text-neutral">
+                            <i class="fa fa-exclamation-circle text-4xl mb-3 text-yellow-500"></i>
+                            <p>未找到图片文件，请选择包含图片的文件夹或图片文件</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            // 为每个图片文件创建表格行
+            imageFiles.forEach(file => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 transition-custom';
+                
+                // 创建图片预览
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const previewCell = row.querySelector('.preview-cell');
+                    previewCell.innerHTML = `
+                        <div class="h-16 w-16 rounded-md overflow-hidden bg-gray-100">
+                            <img src="${e.target.result}" alt="${file.name}" class="h-full w-full object-cover">
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+                
+                // 格式化文件大小
+                const fileSize = formatFileSize(file.size);
+                
+                // 获取文件扩展名
+                const fileExtension = getFileExtension(file.name);
+                
+                // 设置行内容
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap preview-cell">
+                        <div class="h-16 w-16 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
+                            <i class="fa fa-image text-gray-400"></i>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${file.name}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-neutral">${fileSize}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                            ${fileExtension}
+                        </span>
+                    </td>
+                `;
+                
+                imageTableBody.appendChild(row);
+            });
+        }
+        
+        // 格式化文件大小（字节转换为KB或MB）
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // 获取文件扩展名
+        function getFileExtension(filename) {
+            return filename.slice((filename.lastIndexOf(".") - 1 >>> 0) + 2).toUpperCase();
+        }
     </script>
 </body>
 </html>
