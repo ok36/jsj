@@ -60,10 +60,28 @@
         .close-btn:hover {
             background-color: #d32f2f;
         }
+        .file-input-container {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px dashed #ccc;
+            background-color: #f9f9f9;
+        }
+        .note {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <h1>图片浏览器</h1>
+    
+    <div class="file-input-container">
+        <h3>选择图片文件</h3>
+        <input type="file" id="file-input" multiple accept="image/*">
+        <p class="note">注意：由于浏览器安全限制，无法直接访问本地文件系统。请通过此文件选择器添加图片。</p>
+    </div>
+    
     <div id="image-table-container">
         <table id="image-table">
             <thead>
@@ -76,7 +94,7 @@
                 </tr>
             </thead>
             <tbody id="image-table-body">
-                <!-- 图片列表将通过JavaScript动态生成 -->
+                <tr><td colspan="5">请通过上方文件选择器添加图片</td></tr>
             </tbody>
         </table>
     </div>
@@ -90,9 +108,9 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 获取表格主体元素
+            // 获取元素
+            const fileInput = document.getElementById('file-input');
             const tableBody = document.getElementById('image-table-body');
-            // 获取预览区域元素
             const previewContainer = document.getElementById('preview-container');
             const previewImg = document.getElementById('preview-img');
             const previewFilename = document.getElementById('preview-filename');
@@ -103,74 +121,82 @@
                 previewContainer.style.display = 'none';
             });
             
-            // 模拟获取当前目录下的图片文件
-            // 注意：由于浏览器安全限制，实际无法直接访问本地文件系统
-            // 这里使用模拟数据或需要服务器端支持
-            const imageFiles = getImageFiles();
-            
-            // 如果没有图片文件
-            if (imageFiles.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="5">当前文件夹下没有找到图片文件</td></tr>';
-                return;
-            }
-            
-            // 遍历图片文件并生成表格行
-            imageFiles.forEach((file, index) => {
-                const row = document.createElement('tr');
+            // 文件选择变化事件
+            fileInput.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files);
                 
-                // 序号
-                const indexCell = document.createElement('td');
-                indexCell.textContent = index + 1;
+                // 清空表格
+                tableBody.innerHTML = '';
                 
-                // 文件名
-                const nameCell = document.createElement('td');
-                nameCell.textContent = file.name;
+                // 如果没有选择文件
+                if (files.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="5">请选择图片文件</td></tr>';
+                    return;
+                }
                 
-                // 文件类型
-                const typeCell = document.createElement('td');
-                typeCell.textContent = file.type.toUpperCase();
-                
-                // 文件大小
-                const sizeCell = document.createElement('td');
-                sizeCell.textContent = formatFileSize(file.size);
-                
-                // 操作（查看链接）
-                const actionCell = document.createElement('td');
-                const viewLink = document.createElement('a');
-                viewLink.href = '#';
-                viewLink.textContent = '查看';
-                viewLink.dataset.filename = file.name;
-                viewLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    showPreview(file.name);
+                // 遍历图片文件并生成表格行
+                files.forEach((file, index) => {
+                    // 只处理图片文件
+                    if (!file.type.startsWith('image/')) return;
+                    
+                    const row = document.createElement('tr');
+                    
+                    // 序号
+                    const indexCell = document.createElement('td');
+                    indexCell.textContent = index + 1;
+                    
+                    // 文件名
+                    const nameCell = document.createElement('td');
+                    nameCell.textContent = file.name;
+                    
+                    // 文件类型
+                    const typeCell = document.createElement('td');
+                    typeCell.textContent = file.type.split('/')[1].toUpperCase();
+                    
+                    // 文件大小
+                    const sizeCell = document.createElement('td');
+                    sizeCell.textContent = formatFileSize(file.size);
+                    
+                    // 操作（查看链接）
+                    const actionCell = document.createElement('td');
+                    const viewLink = document.createElement('a');
+                    viewLink.href = '#';
+                    viewLink.textContent = '查看';
+                    viewLink.dataset.filename = file.name;
+                    viewLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        showPreview(file);
+                    });
+                    actionCell.appendChild(viewLink);
+                    
+                    // 将单元格添加到行
+                    row.appendChild(indexCell);
+                    row.appendChild(nameCell);
+                    row.appendChild(typeCell);
+                    row.appendChild(sizeCell);
+                    row.appendChild(actionCell);
+                    
+                    // 将行添加到表格
+                    tableBody.appendChild(row);
                 });
-                actionCell.appendChild(viewLink);
-                
-                // 将单元格添加到行
-                row.appendChild(indexCell);
-                row.appendChild(nameCell);
-                row.appendChild(typeCell);
-                row.appendChild(sizeCell);
-                row.appendChild(actionCell);
-                
-                // 将行添加到表格
-                tableBody.appendChild(row);
             });
             
             // 显示预览
-            function showPreview(filename) {
-                // 创建图片URL - 这里假设图片与HTML文件在同一目录
-                // 如果是服务器环境，直接使用文件名即可
-                // 如果是本地文件系统，可能需要使用URL.createObjectURL
-                previewImg.src = filename;
-                previewFilename.textContent = filename;
+            function showPreview(file) {
+                const objectURL = URL.createObjectURL(file);
+                previewImg.src = objectURL;
+                previewFilename.textContent = file.name;
                 previewContainer.style.display = 'block';
+                
+                // 图片加载完成后释放之前的对象URL
+                previewImg.onload = function() {
+                    URL.revokeObjectURL(objectURL);
+                };
                 
                 // 滚动到预览区域
                 previewContainer.scrollIntoView({ behavior: 'smooth' });
             }
             
-                       
             // 格式化文件大小
             function formatFileSize(bytes) {
                 if (bytes === 0) return '0 Bytes';
