@@ -3,19 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>图片列表展示器</title>
+    <title>图片文件列表</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    
-    <!-- 配置Tailwind自定义颜色和字体 -->
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#3B82F6',
-                        secondary: '#10B981',
-                        neutral: '#64748B',
+                        primary: '#3b82f6',
+                        secondary: '#64748b',
                     },
                     fontFamily: {
                         sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -24,223 +21,189 @@
             }
         }
     </script>
-    
     <style type="text/tailwindcss">
         @layer utilities {
             .content-auto {
                 content-visibility: auto;
             }
-            .table-shadow {
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            }
-            .transition-custom {
-                transition: all 0.3s ease;
+            .list-item-hover {
+                @apply transition-all duration-300 hover:bg-blue-50 hover:shadow-md;
             }
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen font-sans">
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <!-- 页面标题 -->
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
         <header class="mb-8 text-center">
-            <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-gray-800 mb-2">图片列表展示器</h1>
-            <p class="text-neutral text-lg">选择文件夹或图片文件，查看图片信息</p>
+            <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-gray-800 mb-2">
+                <i class="fa fa-picture-o text-primary mr-3"></i>图片文件列表
+            </h1>
+            <p class="text-gray-600">当前目录下的所有图片文件</p>
+            <div class="mt-4 flex justify-center">
+                <span id="status-indicator" class="px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
+                    <i class="fa fa-circle-o-notch fa-spin mr-1"></i>加载中...
+                </span>
+            </div>
         </header>
-        
-        <!-- 文件选择区域 -->
-        <div class="mb-8 bg-white rounded-lg p-6 shadow-md">
-            <label for="file-input" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-primary rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-custom">
-                <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                    <i class="fa fa-cloud-upload text-4xl text-primary mb-3"></i>
-                    <p class="mb-2 text-sm text-primary"><span class="font-semibold">点击上传</span> 或拖放图片文件/文件夹</p>
-                    <p class="text-xs text-neutral">支持 JPG, PNG, GIF 等格式</p>
-                </div>
-                <input id="file-input" type="file" class="hidden" accept="image/*" multiple directory webkitdirectory />
-            </label>
-            <p id="selected-info" class="mt-4 text-sm text-neutral hidden"></p>
-        </div>
-        
-        <!-- 图片表格展示区域 -->
-        <div class="bg-white rounded-lg shadow-md overflow-hidden">
-            <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-                <h2 class="text-xl font-semibold text-gray-800">图片信息列表</h2>
-                <div id="stats" class="text-sm text-neutral">
-                    共 <span id="total-count" class="font-medium">0</span> 张图片
+
+        <main>
+            <!-- 手动配置区域 - 如果自动加载失败可以手动添加图片 -->
+            <div id="manual-section" class="mb-6 hidden">
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+                    <h3 class="text-blue-800 font-semibold flex items-center">
+                        <i class="fa fa-info-circle mr-2"></i>手动配置提示
+                    </h3>
+                    <p class="text-blue-700 text-sm mt-1">
+                        如果自动加载失败，请在下方JavaScript代码的imageFiles数组中手动添加图片文件名
+                    </p>
                 </div>
             </div>
-            
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200 table-shadow">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">预览</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">文件名</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">大小</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">类型</th>
-                        </tr>
-                    </thead>
-                    <tbody id="image-table-body" class="bg-white divide-y divide-gray-200">
-                        <!-- 表格内容将通过JavaScript动态生成 -->
-                        <tr>
-                            <td colspan="4" class="px-6 py-12 text-center text-neutral">
-                                <i class="fa fa-picture-o text-4xl mb-3 opacity-30"></i>
-                                <p>请选择图片文件或包含图片的文件夹</p>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+
+            <!-- 图片列表 -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="grid grid-cols-12 bg-gray-100 px-4 py-3 font-medium text-gray-600 border-b">
+                    <div class="col-span-6 sm:col-span-5">文件名</div>
+                    <div class="col-span-6 sm:col-span-7 hidden sm:block">文件路径</div>
+                    <div class="col-span-6 sm:col-span-0 sm:hidden">路径</div>
+                </div>
+                <ul id="image-list" class="divide-y">
+                    <!-- 图片列表将通过JavaScript动态生成 -->
+                </ul>
             </div>
-        </div>
-        
-        <!-- 页脚 -->
-        <footer class="mt-12 text-center text-neutral text-sm">
-            <p>图片列表展示器 &copy; 2023</p>
+
+            <!-- 空状态提示 -->
+            <div id="empty-state" class="hidden py-16 text-center">
+                <i class="fa fa-folder-open-o text-5xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500">未找到任何图片文件</p>
+            </div>
+        </main>
+
+        <footer class="mt-12 text-center text-gray-500 text-sm">
+            <p>图片文件列表 &copy; 2023</p>
         </footer>
     </div>
 
     <script>
-        // 获取DOM元素
-        const fileInput = document.getElementById('file-input');
-        const imageTableBody = document.getElementById('image-table-body');
-        const selectedInfo = document.getElementById('selected-info');
-        const totalCount = document.getElementById('total-count');
+        // 图片文件扩展名列表
+        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'];
         
-        // 监听文件选择事件
-        fileInput.addEventListener('change', handleFiles);
-        
-        // 处理拖放事件
-        const dropArea = document.querySelector('label[for="file-input"]');
-        
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, preventDefaults, false);
-        });
-        
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropArea.addEventListener(eventName, highlight, false);
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, unhighlight, false);
-        });
-        
-        function highlight() {
-            dropArea.classList.add('border-secondary', 'bg-green-50');
-            dropArea.classList.remove('border-primary', 'bg-blue-50', 'hover:bg-blue-100');
-        }
-        
-        function unhighlight() {
-            dropArea.classList.remove('border-secondary', 'bg-green-50');
-            dropArea.classList.add('border-primary', 'bg-blue-50', 'hover:bg-blue-100');
-        }
-        
-        dropArea.addEventListener('drop', handleDrop, false);
-        
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            handleFileList(files);
-        }
-        
-        // 处理选择的文件
-        function handleFiles() {
-            handleFileList(this.files);
-        }
-        
-        // 处理文件列表
-        function handleFileList(files) {
-            // 过滤出图片文件
-            const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+        // 手动配置的图片文件列表 - 如果自动加载失败，请在这里添加图片文件名
+        const imageFiles = [
+            // 示例: "photo1.jpg", "vacation/photo2.png"
+        ];
+
+        // 获取当前页面的路径
+        const getCurrentPath = () => {
+            const path = window.location.pathname;
+            return path.substring(0, path.lastIndexOf('/') + 1);
+        };
+
+        // 检查文件是否为图片
+        const isImageFile = (filename) => {
+            const ext = filename.split('.').pop().toLowerCase();
+            return imageExtensions.includes(ext);
+        };
+
+        // 渲染图片列表
+        const renderImageList = (images) => {
+            const listElement = document.getElementById('image-list');
+            const emptyState = document.getElementById('empty-state');
+            const statusIndicator = document.getElementById('status-indicator');
             
-            // 更新选择信息
-            selectedInfo.textContent = `已选择 ${imageFiles.length} 张图片`;
-            selectedInfo.classList.remove('hidden');
+            // 清空列表
+            listElement.innerHTML = '';
             
-            // 更新总数统计
-            totalCount.textContent = imageFiles.length;
-            
-            // 清空表格
-            imageTableBody.innerHTML = '';
-            
-            // 如果没有图片文件
-            if (imageFiles.length === 0) {
-                imageTableBody.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="px-6 py-12 text-center text-neutral">
-                            <i class="fa fa-exclamation-circle text-4xl mb-3 text-yellow-500"></i>
-                            <p>未找到图片文件，请选择包含图片的文件夹或图片文件</p>
-                        </td>
-                    </tr>
-                `;
+            if (images.length === 0) {
+                // 显示空状态
+                emptyState.classList.remove('hidden');
+                statusIndicator.innerHTML = '<i class="fa fa-exclamation-triangle mr-1"></i>未找到图片文件';
+                statusIndicator.className = 'px-3 py-1 rounded-full text-sm bg-orange-100 text-orange-800';
                 return;
             }
             
-            // 为每个图片文件创建表格行
-            imageFiles.forEach(file => {
-                const row = document.createElement('tr');
-                row.className = 'hover:bg-gray-50 transition-custom';
+            // 隐藏空状态
+            emptyState.classList.add('hidden');
+            statusIndicator.innerHTML = `<i class="fa fa-check mr-1"></i>找到 ${images.length} 个图片文件`;
+            statusIndicator.className = 'px-3 py-1 rounded-full text-sm bg-green-100 text-green-800';
+            
+            // 添加图片项到列表
+            images.forEach(filename => {
+                const currentPath = getCurrentPath();
+                const fullPath = window.location.origin + currentPath + filename;
                 
-                // 创建图片预览
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const previewCell = row.querySelector('.preview-cell');
-                    previewCell.innerHTML = `
-                        <div class="h-16 w-16 rounded-md overflow-hidden bg-gray-100">
-                            <img src="${e.target.result}" alt="${file.name}" class="h-full w-full object-cover">
+                const listItem = document.createElement('li');
+                listItem.className = 'px-4 py-3 list-item-hover';
+                listItem.innerHTML = `
+                    <div class="grid grid-cols-12 gap-4 items-center">
+                        <div class="col-span-6 sm:col-span-5 flex items-center">
+                            <i class="fa fa-file-image-o text-primary mr-3"></i>
+                            <span class="truncate">${filename}</span>
                         </div>
-                    `;
-                };
-                reader.readAsDataURL(file);
-                
-                // 格式化文件大小
-                const fileSize = formatFileSize(file.size);
-                
-                // 获取文件扩展名
-                const fileExtension = getFileExtension(file.name);
-                
-                // 设置行内容
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap preview-cell">
-                        <div class="h-16 w-16 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
-                            <i class="fa fa-image text-gray-400"></i>
+                        <div class="col-span-6 sm:col-span-7 text-sm text-gray-600 truncate">
+                            ${fullPath}
                         </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm font-medium text-gray-900">${file.name}</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm text-neutral">${fileSize}</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                            ${fileExtension}
-                        </span>
-                    </td>
+                    </div>
                 `;
                 
-                imageTableBody.appendChild(row);
+                // 点击列表项可以复制路径
+                listItem.addEventListener('click', () => {
+                    navigator.clipboard.writeText(fullPath).then(() => {
+                        // 显示复制成功提示
+                        const originalHTML = listItem.innerHTML;
+                        listItem.innerHTML = `
+                            <div class="grid grid-cols-12 gap-4 items-center">
+                                <div class="col-span-12 flex items-center justify-center text-green-600">
+                                    <i class="fa fa-check-circle mr-2"></i>
+                                    <span>路径已复制到剪贴板</span>
+                                </div>
+                            </div>
+                        `;
+                        
+                        setTimeout(() => {
+                            listItem.innerHTML = originalHTML;
+                        }, 2000);
+                    });
+                });
+                
+                listElement.appendChild(listItem);
             });
-        }
-        
-        // 格式化文件大小（字节转换为KB或MB）
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-        
-        // 获取文件扩展名
-        function getFileExtension(filename) {
-            return filename.slice((filename.lastIndexOf(".") - 1 >>> 0) + 2).toUpperCase();
-        }
+        };
+
+        // 尝试从服务器获取文件列表
+        const fetchFileList = async () => {
+            try {
+                // 尝试访问当前目录（需要服务器支持目录浏览）
+                const response = await fetch('.');
+                
+                if (!response.ok) {
+                    throw new Error('无法获取目录内容');
+                }
+                
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // 提取所有文件链接（适用于Apache/Nginx默认目录列表）
+                const links = Array.from(doc.querySelectorAll('a'))
+                    .map(link => link.getAttribute('href'))
+                    .filter(href => href && !href.endsWith('/') && isImageFile(href));
+                
+                // 去重并排序
+                const uniqueLinks = [...new Set(links)].sort((a, b) => a.localeCompare(b));
+                
+                return uniqueLinks;
+            } catch (error) {
+                console.log('自动获取文件列表失败，将使用手动配置的列表:', error);
+                document.getElementById('manual-section').classList.remove('hidden');
+                return imageFiles.filter(filename => isImageFile(filename));
+            }
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', async () => {
+            const images = await fetchFileList();
+            renderImageList(images);
+        });
     </script>
 </body>
 </html>
