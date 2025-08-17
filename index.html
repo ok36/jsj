@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片浏览器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .preview-container {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .preview-img {
+            max-width: 80%;
+            max-height: 500px;
+            border: 1px solid #ddd;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .close-btn {
+            margin-top: 10px;
+            padding: 5px 15px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .close-btn:hover {
+            background-color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <h1>图片浏览器</h1>
+    <div id="image-table-container">
+        <table id="image-table">
+            <thead>
+                <tr>
+                    <th>序号</th>
+                    <th>文件名</th>
+                    <th>类型</th>
+                    <th>大小</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="image-table-body">
+                <!-- 图片列表将通过JavaScript动态生成 -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="preview-container" id="preview-container" style="display: none;">
+        <h2>图片预览</h2>
+        <img id="preview-img" class="preview-img" src="" alt="图片预览">
+        <p id="preview-filename"></p>
+        <button class="close-btn" id="close-preview">关闭预览</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取表格主体元素
+            const tableBody = document.getElementById('image-table-body');
+            // 获取预览区域元素
+            const previewContainer = document.getElementById('preview-container');
+            const previewImg = document.getElementById('preview-img');
+            const previewFilename = document.getElementById('preview-filename');
+            const closePreviewBtn = document.getElementById('close-preview');
+            
+            // 关闭预览按钮事件
+            closePreviewBtn.addEventListener('click', function() {
+                previewContainer.style.display = 'none';
+            });
+            
+            // 模拟获取当前目录下的图片文件
+            // 注意：由于浏览器安全限制，实际无法直接访问本地文件系统
+            // 这里使用模拟数据或需要服务器端支持
+            const imageFiles = getImageFiles();
+            
+            // 如果没有图片文件
+            if (imageFiles.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5">当前文件夹下没有找到图片文件</td></tr>';
+                return;
+            }
+            
+            // 遍历图片文件并生成表格行
+            imageFiles.forEach((file, index) => {
+                const row = document.createElement('tr');
+                
+                // 序号
+                const indexCell = document.createElement('td');
+                indexCell.textContent = index + 1;
+                
+                // 文件名
+                const nameCell = document.createElement('td');
+                nameCell.textContent = file.name;
+                
+                // 文件类型
+                const typeCell = document.createElement('td');
+                typeCell.textContent = file.type.toUpperCase();
+                
+                // 文件大小
+                const sizeCell = document.createElement('td');
+                sizeCell.textContent = formatFileSize(file.size);
+                
+                // 操作（查看链接）
+                const actionCell = document.createElement('td');
+                const viewLink = document.createElement('a');
+                viewLink.href = '#';
+                viewLink.textContent = '查看';
+                viewLink.dataset.filename = file.name;
+                viewLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showPreview(file.name);
+                });
+                actionCell.appendChild(viewLink);
+                
+                // 将单元格添加到行
+                row.appendChild(indexCell);
+                row.appendChild(nameCell);
+                row.appendChild(typeCell);
+                row.appendChild(sizeCell);
+                row.appendChild(actionCell);
+                
+                // 将行添加到表格
+                tableBody.appendChild(row);
+            });
+            
+            // 显示预览
+            function showPreview(filename) {
+                // 创建图片URL - 这里假设图片与HTML文件在同一目录
+                // 如果是服务器环境，直接使用文件名即可
+                // 如果是本地文件系统，可能需要使用URL.createObjectURL
+                previewImg.src = filename;
+                previewFilename.textContent = filename;
+                previewContainer.style.display = 'block';
+                
+                // 滚动到预览区域
+                previewContainer.scrollIntoView({ behavior: 'smooth' });
+            }
+            
+            // 模拟获取图片文件列表
+            // 实际应用中，这需要通过服务器端脚本实现
+            function getImageFiles() {
+                // 这里只是模拟，实际无法在纯前端获取本地文件列表
+                // 你需要使用服务器端语言如PHP、Node.js等来获取真实文件列表
+                
+                // 模拟数据 - 在实际应用中应该替换为从服务器获取的真实数据
+                const mockFiles = [
+                    { name: '01.jpg', type: 'jpg', size: 1024 * 150 }, // 150KB
+                    { name: '02.jpg', type: 'jpg', size: 1024 * 230 },  // 230KB
+                    { name: 'logo.png', type: 'png', size: 1024 * 80 }, // 80KB
+                    { name: 'animation.gif', type: 'gif', size: 1024 * 350 } // 350KB
+                ];
+                
+                // 在实际应用中，你可以尝试使用fetch API从服务器获取文件列表
+                // 例如：
+                // try {
+                //     const response = await fetch('/api/get-images');
+                //     return await response.json();
+                // } catch (error) {
+                //     console.error('获取图片列表失败:', error);
+                //     return [];
+                // }
+                
+                return mockFiles;
+            }
+            
+            // 格式化文件大小
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        });
+    </script>
+</body>
+</html>
