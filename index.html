@@ -170,33 +170,7 @@
                 previewContainer.scrollIntoView({ behavior: 'smooth' });
             }
             
-            // 模拟获取图片文件列表
-            // 实际应用中，这需要通过服务器端脚本实现
-            function getImageFiles() {
-                // 这里只是模拟，实际无法在纯前端获取本地文件列表
-                // 你需要使用服务器端语言如PHP、Node.js等来获取真实文件列表
-                
-                // 模拟数据 - 在实际应用中应该替换为从服务器获取的真实数据
-                const mockFiles = [
-                    { name: '01.jpg', type: 'jpg', size: 1024 * 150 }, // 150KB
-                    { name: '02.jpg', type: 'jpg', size: 1024 * 230 },  // 230KB
-                    { name: 'logo.png', type: 'png', size: 1024 * 80 }, // 80KB
-                    { name: 'animation.gif', type: 'gif', size: 1024 * 350 } // 350KB
-                ];
-                
-                // 在实际应用中，你可以尝试使用fetch API从服务器获取文件列表
-                // 例如：
-                // try {
-                //     const response = await fetch('/api/get-images');
-                //     return await response.json();
-                // } catch (error) {
-                //     console.error('获取图片列表失败:', error);
-                //     return [];
-                // }
-                
-                return mockFiles;
-            }
-            
+                       
             // 格式化文件大小
             function formatFileSize(bytes) {
                 if (bytes === 0) return '0 Bytes';
