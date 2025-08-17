@@ -4,206 +4,382 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>图片文件列表</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#3b82f6',
-                        secondary: '#64748b',
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
-                    },
-                }
-            }
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f9f9f9;
+            color: #333;
         }
-    </script>
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .content-auto {
-                content-visibility: auto;
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        .instructions {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #4CAF50;
+        }
+        .status {
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .loading {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+        .success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        .image-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .image-table th, .image-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .image-table th {
+            background-color: #f2f2f2;
+            font-weight: 600;
+        }
+        .image-table tr:hover {
+            background-color: #f9f9f9;
+        }
+        .thumbnail {
+            width: 80px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .thumbnail:hover {
+            transform: scale(1.05);
+        }
+        .file-path {
+            color: #666;
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background-color 0.2s;
+        }
+        .copy-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+        .copy-btn:hover {
+            background-color: #0b7dda;
+        }
+        .view-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .view-btn:hover {
+            background-color: #3d8b40;
+        }
+        .manual-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #fff8e1;
+            border-radius: 5px;
+            border-left: 4px solid #ff9800;
+        }
+        
+        /* 预览模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+        }
+        .modal-image {
+            max-width: 100%;
+            max-height: 80vh;
+            display: block;
+            margin: 0 auto;
+            border: 4px solid white;
+            border-radius: 4px;
+        }
+        .close-modal {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .modal-caption {
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            font-size: 1.1em;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .image-table {
+                font-size: 0.9em;
             }
-            .list-item-hover {
-                @apply transition-all duration-300 hover:bg-blue-50 hover:shadow-md;
+            .image-table th:nth-child(3), 
+            .image-table td:nth-child(3) {
+                display: none;
+            }
+            .thumbnail {
+                width: 60px;
+                height: 45px;
+            }
+            button {
+                padding: 4px 8px;
+                font-size: 0.8em;
             }
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-5xl">
-        <header class="mb-8 text-center">
-            <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-gray-800 mb-2">
-                <i class="fa fa-picture-o text-primary mr-3"></i>图片文件列表
-            </h1>
-            <p class="text-gray-600">当前目录下的所有图片文件</p>
-            <div class="mt-4 flex justify-center">
-                <span id="status-indicator" class="px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
-                    <i class="fa fa-circle-o-notch fa-spin mr-1"></i>加载中...
-                </span>
-            </div>
-        </header>
-
-        <main>
-            <!-- 手动配置区域 - 如果自动加载失败可以手动添加图片 -->
-            <div id="manual-section" class="mb-6 hidden">
-                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
-                    <h3 class="text-blue-800 font-semibold flex items-center">
-                        <i class="fa fa-info-circle mr-2"></i>手动配置提示
-                    </h3>
-                    <p class="text-blue-700 text-sm mt-1">
-                        如果自动加载失败，请在下方JavaScript代码的imageFiles数组中手动添加图片文件名
-                    </p>
-                </div>
-            </div>
-
-            <!-- 图片列表 -->
-            <div class="bg-white rounded-lg shadow overflow-hidden">
-                <div class="grid grid-cols-12 bg-gray-100 px-4 py-3 font-medium text-gray-600 border-b">
-                    <div class="col-span-6 sm:col-span-5">文件名</div>
-                    <div class="col-span-6 sm:col-span-7 hidden sm:block">文件路径</div>
-                    <div class="col-span-6 sm:col-span-0 sm:hidden">路径</div>
-                </div>
-                <ul id="image-list" class="divide-y">
-                    <!-- 图片列表将通过JavaScript动态生成 -->
-                </ul>
-            </div>
-
-            <!-- 空状态提示 -->
-            <div id="empty-state" class="hidden py-16 text-center">
-                <i class="fa fa-folder-open-o text-5xl text-gray-300 mb-4"></i>
-                <p class="text-gray-500">未找到任何图片文件</p>
-            </div>
-        </main>
-
-        <footer class="mt-12 text-center text-gray-500 text-sm">
-            <p>图片文件列表 &copy; 2023</p>
-        </footer>
+<body>
+    <h1><i class="fa fa-picture-o" aria-hidden="true"></i> 图片文件列表</h1>
+    
+    <div class="instructions">
+        <strong>说明：</strong> 表格展示当前文件夹中的图片文件，包含文件名、缩略图和完整路径。点击"复制"按钮可复制路径，点击"查看"按钮或缩略图可预览大图。
+    </div>
+    
+    <div id="status" class="status loading">
+        <i class="fa fa-spinner fa-spin" aria-hidden="true"></i> 正在加载图片列表...
+    </div>
+    
+    <table class="image-table">
+        <thead>
+            <tr>
+                <th>文件名</th>
+                <th>缩略图</th>
+                <th>文件路径</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="fileTableBody">
+            <!-- 图片列表将通过JavaScript动态生成 -->
+        </tbody>
+    </table>
+    
+    <!-- 图片预览模态框 -->
+    <div id="imageModal" class="modal">
+        <span class="close-modal">&times;</span>
+        <div class="modal-content">
+            <img id="modalImage" class="modal-image" src="" alt="图片预览">
+            <div class="modal-caption" id="modalCaption"></div>
+        </div>
+    </div>
+    
+    <div class="manual-section">
+        <h3><i class="fa fa-info-circle" aria-hidden="true"></i> 远程服务器配置：</h3>
+        <p>请在下方JavaScript的<code>imageFiles</code>数组中添加图片文件名，示例：</p>
+        <pre>const imageFiles = [
+    "photo1.jpg",    // 根目录下的图片
+    "images/pic2.png" // 子文件夹中的图片
+];</pre>
+        <p><strong>注意：</strong> 文件名区分大小写，需与实际上传的文件名完全一致</p>
     </div>
 
     <script>
-        // 图片文件扩展名列表
-        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'];
-        
-        // 手动配置的图片文件列表 - 如果自动加载失败，请在这里添加图片文件名
+        // ##############################
+        // 在此处添加你的图片文件名
+        // 远程服务器必须手动配置
+        // ##############################
         const imageFiles = [
-            // 示例: "photo1.jpg", "vacation/photo2.png"
+            // 请取消注释并修改为你的图片文件名
+            "1-01.jpg",
+            "1-02.png",
+            // "subfolder/image.webp"
         ];
 
-        // 获取当前页面的路径
-        const getCurrentPath = () => {
-            const path = window.location.pathname;
-            return path.substring(0, path.lastIndexOf('/') + 1);
-        };
-
+        // 支持的图片格式
+        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'];
+        
+        // 获取当前页面的基础URL（兼容各种服务器环境）
+        function getBaseUrl() {
+            const href = window.location.href;
+            const lastSlashIndex = href.lastIndexOf('/');
+            return href.substring(0, lastSlashIndex + 1);
+        }
+        
         // 检查文件是否为图片
-        const isImageFile = (filename) => {
+        function isImageFile(filename) {
+            if (!filename) return false;
             const ext = filename.split('.').pop().toLowerCase();
             return imageExtensions.includes(ext);
-        };
-
-        // 渲染图片列表
-        const renderImageList = (images) => {
-            const listElement = document.getElementById('image-list');
-            const emptyState = document.getElementById('empty-state');
-            const statusIndicator = document.getElementById('status-indicator');
+        }
+        
+        // 显示图片列表
+        function displayImages(images) {
+            const tableBody = document.getElementById('fileTableBody');
+            const status = document.getElementById('status');
+            const baseUrl = getBaseUrl();
             
-            // 清空列表
-            listElement.innerHTML = '';
+            tableBody.innerHTML = ''; // 清空表格
             
-            if (images.length === 0) {
-                // 显示空状态
-                emptyState.classList.remove('hidden');
-                statusIndicator.innerHTML = '<i class="fa fa-exclamation-triangle mr-1"></i>未找到图片文件';
-                statusIndicator.className = 'px-3 py-1 rounded-full text-sm bg-orange-100 text-orange-800';
+            // 过滤并排序图片
+            const validImages = images.filter(isImageFile).sort((a, b) => a.localeCompare(b));
+            
+            if (validImages.length === 0) {
+                status.className = 'status error';
+                status.innerHTML = '<i class="fa fa-exclamation-triangle" aria-hidden="true"></i> 未找到图片，请按下方说明手动添加';
                 return;
             }
             
-            // 隐藏空状态
-            emptyState.classList.add('hidden');
-            statusIndicator.innerHTML = `<i class="fa fa-check mr-1"></i>找到 ${images.length} 个图片文件`;
-            statusIndicator.className = 'px-3 py-1 rounded-full text-sm bg-green-100 text-green-800';
+            // 更新状态
+            status.className = 'status success';
+            status.innerHTML = `<i class="fa fa-check" aria-hidden="true"></i> 已找到 ${validImages.length} 个图片文件`;
             
-            // 添加图片项到列表
-            images.forEach(filename => {
-                const currentPath = getCurrentPath();
-                const fullPath = window.location.origin + currentPath + filename;
+            // 添加图片到表格
+            validImages.forEach(filename => {
+                const normalizedFilename = filename.replace(/\\/g, '/'); // 统一路径分隔符
+                const fullPath = baseUrl + normalizedFilename;
                 
-                const listItem = document.createElement('li');
-                listItem.className = 'px-4 py-3 list-item-hover';
-                listItem.innerHTML = `
-                    <div class="grid grid-cols-12 gap-4 items-center">
-                        <div class="col-span-6 sm:col-span-5 flex items-center">
-                            <i class="fa fa-file-image-o text-primary mr-3"></i>
-                            <span class="truncate">${filename}</span>
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${normalizedFilename}</td>
+                    <td>
+                        <img src="${fullPath}" class="thumbnail" alt="${normalizedFilename}的缩略图" 
+                             data-path="${fullPath}" data-name="${normalizedFilename}">
+                    </td>
+                    <td class="file-path">${fullPath}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="copy-btn" data-path="${fullPath}">
+                                <i class="fa fa-copy" aria-hidden="true"></i> 复制
+                            </button>
+                            <button class="view-btn" data-path="${fullPath}" data-name="${normalizedFilename}">
+                                <i class="fa fa-eye" aria-hidden="true"></i> 查看
+                            </button>
                         </div>
-                        <div class="col-span-6 sm:col-span-7 text-sm text-gray-600 truncate">
-                            ${fullPath}
-                        </div>
-                    </div>
+                    </td>
                 `;
                 
-                // 点击列表项可以复制路径
-                listItem.addEventListener('click', () => {
-                    navigator.clipboard.writeText(fullPath).then(() => {
-                        // 显示复制成功提示
-                        const originalHTML = listItem.innerHTML;
-                        listItem.innerHTML = `
-                            <div class="grid grid-cols-12 gap-4 items-center">
-                                <div class="col-span-12 flex items-center justify-center text-green-600">
-                                    <i class="fa fa-check-circle mr-2"></i>
-                                    <span>路径已复制到剪贴板</span>
-                                </div>
-                            </div>
-                        `;
-                        
-                        setTimeout(() => {
-                            listItem.innerHTML = originalHTML;
-                        }, 2000);
+                tableBody.appendChild(row);
+            });
+            
+            // 绑定复制按钮事件
+            document.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const path = this.getAttribute('data-path');
+                    const originalText = this.innerHTML;
+                    
+                    navigator.clipboard.writeText(path).then(() => {
+                        this.innerHTML = '<i class="fa fa-check" aria-hidden="true"></i> 已复制';
+                        setTimeout(() => this.innerHTML = originalText, 2000);
+                    }).catch(() => {
+                        alert('复制失败，请手动复制: ' + path);
                     });
                 });
-                
-                listElement.appendChild(listItem);
             });
-        };
-
-        // 尝试从服务器获取文件列表
-        const fetchFileList = async () => {
+            
+            // 绑定查看图片事件
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImage');
+            const modalCaption = document.getElementById('modalCaption');
+            const closeBtn = document.querySelector('.close-modal');
+            
+            // 打开图片预览
+            function openImageModal(path, name) {
+                modalImg.src = path;
+                modalCaption.textContent = name;
+                modal.style.display = 'flex';
+            }
+            
+            // 查看按钮点击
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    openImageModal(this.getAttribute('data-path'), this.getAttribute('data-name'));
+                });
+            });
+            
+            // 缩略图点击
+            document.querySelectorAll('.thumbnail').forEach(thumb => {
+                thumb.addEventListener('click', function() {
+                    openImageModal(this.getAttribute('data-path'), this.getAttribute('data-name'));
+                });
+            });
+            
+            // 关闭模态框
+            closeBtn.addEventListener('click', () => modal.style.display = 'none');
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.style.display === 'flex') modal.style.display = 'none';
+            });
+        }
+        
+        // 初始化函数（优先手动配置）
+        async function init() {
+            // 优先使用手动配置的图片列表
+            if (imageFiles.length > 0) {
+                displayImages(imageFiles);
+                return;
+            }
+            
+            // 尝试自动加载（仅本地或允许目录浏览的服务器）
             try {
-                // 尝试访问当前目录（需要服务器支持目录浏览）
-                const response = await fetch('.');
-                
-                if (!response.ok) {
-                    throw new Error('无法获取目录内容');
-                }
+                const response = await fetch('.', { method: 'GET' });
+                if (!response.ok) throw new Error('服务器不允许目录浏览');
                 
                 const html = await response.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                
-                // 提取所有文件链接（适用于Apache/Nginx默认目录列表）
+                const doc = new DOMParser().parseFromString(html, 'text/html');
                 const links = Array.from(doc.querySelectorAll('a'))
                     .map(link => link.getAttribute('href'))
-                    .filter(href => href && !href.endsWith('/') && isImageFile(href));
+                    .filter(href => href && !href.includes('?') && !href.includes('#'));
                 
-                // 去重并排序
-                const uniqueLinks = [...new Set(links)].sort((a, b) => a.localeCompare(b));
-                
-                return uniqueLinks;
+                displayImages([...new Set(links)]); // 去重后显示
             } catch (error) {
-                console.log('自动获取文件列表失败，将使用手动配置的列表:', error);
-                document.getElementById('manual-section').classList.remove('hidden');
-                return imageFiles.filter(filename => isImageFile(filename));
+                console.log('自动加载失败:', error);
+                displayImages([]); // 显示手动配置提示
             }
-        };
-
-        // 初始化
-        document.addEventListener('DOMContentLoaded', async () => {
-            const images = await fetchFileList();
-            renderImageList(images);
-        });
+        }
+        
+        // 页面加载完成后执行
+        window.onload = init;
     </script>
 </body>
 </html>
